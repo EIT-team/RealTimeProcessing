@@ -16,13 +16,10 @@ for chan = 1:N_CHANNELS
 %format.
 
 %offset = ((sample-1))*N_CHANNELS*BYTES_PER_SAMPLE + (chan-1)*BYTES_PER_SAMPLE;
-tic
+
  %this_sample = sum((bitshift ( stream((offset+1):(offset+3)) , [8;16;24])));
  this_sample = bitshift(stream(offset+1),8) + bitshift(stream(offset+2),16) + bitshift(stream(offset+3),24);
- fprintf('Bitshift %1.5f\n',toc)
- tic
 data(chan,sample) = typecast (uint32(this_sample),'int32');
- fprintf('cast %1.5f\n',toc)
 
 offset = offset + 3;
         

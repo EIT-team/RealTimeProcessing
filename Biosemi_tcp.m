@@ -3,48 +3,56 @@ BioSemi_IP      = '127.0.0.1';
 BioSemi_Port    = 8888;
 BioSemi_Buffer  = 24576;
 
-%Sampling Frequency
-Fs = 16384;
-
-%Number of data channels and samples per TCP packet
-N_CHANNELS = 8;
-BYTES_PER_SAMPLE = 3;
-SAMPLES_PER_PACKET = BioSemi_Buffer /(N_CHANNELS*BYTES_PER_SAMPLE);
-
 %Connect to Biosemi over TCP
 biosemi_tcp_obj = create_tcp_obj(BioSemi_IP,BioSemi_Port,BioSemi_Buffer);
 
+
+%Sampling Frequency
+EEG_Settings.Fs = 16384;
+
+%Number of data channels and samples per TCP packet
+EEG_Settings.N_CHANNELS = 8;
+EEG_Settings.BYTES_PER_SAMPLE = 3;
+EEG_Settings.SAMPLES_PER_PACKET = BioSemi_Buffer /(EEG_Settings.N_CHANNELS*EEG_Settings.BYTES_PER_SAMPLE);
+
+EEG_Settings.SAMPLES_READ = 0;
+
 fclose(biosemi_tcp_obj)
+
 fopen(biosemi_tcp_obj)
 
 clear data
 
 %No. of samples read so far
-SAMPLES_READ = 0;
 
-%Using this to measure run time
-T = [];
-tic
-while(SAMPLES_READ < Fs*100)
+%How many seconds of data to read
+EEG_Settings.Seconds_Of_Data = 1;
+
+%Dimensions of a single packet of data, N_Channels x N_Samples
+dims = ([EEG_Settings.N_CHANNELS EEG_Settings.SAMPLES_PER_PACKET]);
+
+while(EEG_Settings.SAMPLES_READ < EEG_Settings.Fs*EEG_Settings.Seconds_Of_Data)
     
-    %pre allocate for speed
+    %pre allocate matrix for speed
+        %Create 
     if exist('data','var')
-        data =[data zeros(N_CHANNELS,SAMPLES_PER_PACKET)];
+        data =[data zeros(dims)];
     else
-        data= zeros(N_CHANNELS,SAMPLES_PER_PACKET);
+        data= zeros(dims);
     end
     
     %Get block of data from Biosemi
-    data(:,(SAMPLES_READ+1):SAMPLES_READ+SAMPLES_PER_PACKET) = ...
-        get_tcp_packet_from_BioSemi(biosemi_tcp_obj, N_CHANNELS, SAMPLES_PER_PACKET, BYTES_PER_SAMPLE);
+   %Get block of data from Biosemi
+    data(:, (EEG_Settings.SAMPLES_READ+1) : EEG_Settings.SAMPLES_READ + EEG_Settings.SAMPLES_PER_PACKET) = ...
+        get_tcp_packet_from_BioSemi(    biosemi_tcp_obj, ...
+                                        EEG_Settings.N_CHANNELS,...
+                                        EEG_Settings.SAMPLES_PER_PACKET,...
+                                        EEG_Settings.BYTES_PER_SAMPLE);
     
-    SAMPLES_READ = SAMPLES_READ + SAMPLES_PER_PACKET;
+    EEG_Settings.SAMPLES_READ = EEG_Settings.SAMPLES_READ + EEG_Settings.SAMPLES_PER_PACKET;
     
     %% Plotting stuff
-    if ~mod(SAMPLES_READ,Fs/10)
-        
-        T = [T toc];
-        tic
+    if ~mod(EEG_Settings.SAMPLES_READ,EEG_Settings.Fs/10)
         
         for i = 1:8
         subplot(8,2,2*i-1)
@@ -55,9 +63,10 @@ while(SAMPLES_READ < Fs*100)
         drawnow
     end
     
-    if ~mod(SAMPLES_READ,2*Fs)
+    if ~mod(EEG_Settings.SAMPLES_READ,2*EEG_Settings.Fs)
         subplot(1,2,2)
-        pwelch(data(1,SAMPLES_READ-Fs:SAMPLES_READ),Fs,.95,[],Fs)
+        plot( abs(hilbert( filtfilt(b,a,data(1,:)))))
+        %pwelch(data(1,EEG_Settings.SAMPLES_READ-EEG_Settings.Fs:EEG_Settings.SAMPLES_READ),EEG_Settings.Fs,.95,[],EEG_Settings.Fs)
     end
 end
 

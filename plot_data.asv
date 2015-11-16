@@ -1,0 +1,12 @@
+function plot_data(data,EEG_Settings)
+
+for i = 1:EEG_Settings.N_CHANNELS
+    height = (1-0.1)/EEG_Settings.N_CHANNELS;
+    h(i) = axes('Position',[0.05, 0.1+(i-1)*height, 0.9, height*0.95]);
+    ylabel([num2str(i) ' (uV)'])
+    plot((1:size(data,2))/EEG_Settings.Fs,data(i,:))
+    
+end
+
+set(h(2:end),'XTickLabel','')
+set(h(:),'YTickLabel','')

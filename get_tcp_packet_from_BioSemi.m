@@ -7,7 +7,7 @@ offset = 0;             %Byte offset corresponding to chan/sample being processe
 %and sum them to get the actual data value.
 Bit_Shift_Mask = [8 16 24];
 
-%Scale factor to get values in uV
+%Scale factor to get values in uV. Otherwise values don't make sense
 MAGNITUDE_SCALE_FACTOR = 256*32;
 
 %Pre allocate space

@@ -1,3 +1,7 @@
+%Code for loading BioSemi data directly into MATLAB over TCP
+
+%Tom Dowrick November 2015.
+
 %BioSemi IP Address, Port and TCP Buffer Size
 BioSemi_IP      = '127.0.0.1';
 BioSemi_Port    = 8888;
@@ -14,60 +18,36 @@ EEG_Settings.Fs = 16384;
 EEG_Settings.N_CHANNELS = 8;
 EEG_Settings.BYTES_PER_SAMPLE = 3;
 EEG_Settings.SAMPLES_PER_PACKET = BioSemi_Buffer /(EEG_Settings.N_CHANNELS*EEG_Settings.BYTES_PER_SAMPLE);
-
+EEG_Settings.Max_Voltage = 1e6; %1V in uV
+%Running total of recorded samples
 EEG_Settings.SAMPLES_READ = 0;
 
-fclose(biosemi_tcp_obj)
+%How many seconds of data to read
+EEG_Settings.Seconds_Of_Data = 2;
 
-fopen(biosemi_tcp_obj)
+%Detect injection frequency and calculate filter coefficents
+Fc = get_inj_freq;
+F_Band = 100;
+F_Ord = 1;
+[b,a] = butter(F_Ord,(Fc+[-F_Band,F_Band])./(EEG_Settings.Fs/2));
+
+try
+    fopen(biosemi_tcp_obj)
+catch
+    disp('Unable to open TCP connection with BioSemi, check ActiView is running')
+end
 
 clear data
 
-%No. of samples read so far
+%Create axes handles and setup plotting
+h = create_axes(EEG_Settings);
 
-%How many seconds of data to read
-EEG_Settings.Seconds_Of_Data = 1;
-
-%Dimensions of a single packet of data, N_Channels x N_Samples
-dims = ([EEG_Settings.N_CHANNELS EEG_Settings.SAMPLES_PER_PACKET]);
-
-while(EEG_Settings.SAMPLES_READ < EEG_Settings.Fs*EEG_Settings.Seconds_Of_Data)
-    
-    %pre allocate matrix for speed
-        %Create 
-    if exist('data','var')
-        data =[data zeros(dims)];
-    else
-        data= zeros(dims);
-    end
-    
-    %Get block of data from Biosemi
-   %Get block of data from Biosemi
-    data(:, (EEG_Settings.SAMPLES_READ+1) : EEG_Settings.SAMPLES_READ + EEG_Settings.SAMPLES_PER_PACKET) = ...
-        get_tcp_packet_from_BioSemi(    biosemi_tcp_obj, ...
-                                        EEG_Settings.N_CHANNELS,...
-                                        EEG_Settings.SAMPLES_PER_PACKET,...
-                                        EEG_Settings.BYTES_PER_SAMPLE);
-    
-    EEG_Settings.SAMPLES_READ = EEG_Settings.SAMPLES_READ + EEG_Settings.SAMPLES_PER_PACKET;
-    
-    %% Plotting stuff
-    if ~mod(EEG_Settings.SAMPLES_READ,EEG_Settings.Fs/10)
-        
-        for i = 1:8
-        subplot(8,2,2*i-1)
-        plot(data(i,:))
-        
-        end
-              
-        drawnow
-    end
-    
-    if ~mod(EEG_Settings.SAMPLES_READ,2*EEG_Settings.Fs)
-        subplot(1,2,2)
-        plot( abs(hilbert( filtfilt(b,a,data(1,:)))))
-        %pwelch(data(1,EEG_Settings.SAMPLES_READ-EEG_Settings.Fs:EEG_Settings.SAMPLES_READ),EEG_Settings.Fs,.95,[],EEG_Settings.Fs)
-    end
+while(1)
+data  = get_x_seconds_of_data(biosemi_tcp_obj,EEG_Settings,EEG_Settings.Seconds_Of_Data);
+data = filtfilt(b,a,data');
+data = abs(hilbert(data));
+data = data';
+plot_data(data,EEG_Settings,h);
+drawnow;
 end
-
-mean(T)
+fclose(biosemi_tcp_obj);

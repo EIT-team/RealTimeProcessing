@@ -1,60 +1,60 @@
 %Code for loading BioSemi data directly into MATLAB over TCP
 clear all
 %Tom Dowrick November 2015.
-
+%% Set variables
 %BioSemi IP Address, Port and TCP Buffer Size
-BioSemi_IP      = '127.0.0.1';
-BioSemi_Port    = 8888;
-BioSemi_Buffer  = 27648;
+EEG.IP      = '127.0.0.1';
+EEG.Port    = 8888;
+EEG.TCP_buffer  = 27648;
+EEG.Type = 'BioSemi';
 
 %Connect to Biosemi over TCP
-biosemi_tcp_obj = create_tcp_obj(BioSemi_IP,BioSemi_Port,BioSemi_Buffer);
+EEG.tcp_obj = create_tcp_obj(EEG.IP,EEG.Port,EEG.TCP_buffer);
 
 
 %Sampling Frequency
-EEG_Settings.Fs = 16384;
+EEG.Fs = 16384;
 
 %Number of data channels and samples per TCP packet
-EEG_Settings.N_elecs = 8;
-EEG_Settings.Triggers = 1; %0 if triggers not recorded
-EEG_Settings.N_CHANNELS = EEG_Settings.N_elecs + EEG_Settings.Triggers;
-EEG_Settings.BYTES_PER_SAMPLE = 3;
-EEG_Settings.SAMPLES_PER_PACKET = BioSemi_Buffer /(EEG_Settings.N_CHANNELS*EEG_Settings.BYTES_PER_SAMPLE);
-EEG_Settings.Max_Voltage = 1e6; %1V in uV
+EEG.N_elecs = 8;
+EEG.Triggers = 1; %0 if triggers not recorded
+EEG.N_recorded_channels = EEG.N_elecs + EEG.Triggers;
+EEG.Bytes_per_sample = 3;
+EEG.Samples_per_packet = EEG.TCP_buffer /(EEG.N_recorded_channels*EEG.Bytes_per_sample);
+EEG.Max_voltage_uV = 1e6; %1V in uV
 %Running total of recorded samples
-EEG_Settings.SAMPLES_READ = 0;
-EEG_Settings.N_trig_chans = 16; %Number of trigger channels (Biosemi has 16)
+EEG.Samples_read = 0;
+EEG.N_trig_chans = 16; %Number of trigger channels (Biosemi has 16)
 
 %How many seconds of data to read
-EEG_Settings.Seconds_Of_Data = 1;
+EEG.Seconds_of_data = 1;
 
 %Detect injection frequency and calculate filter coefficents
 Fc = get_inj_freq;
 F_Band = 100;
 F_Ord = 1;
-[b,a] = butter(F_Ord,(Fc+[-F_Band,F_Band])./(EEG_Settings.Fs/2));
+[b,a] = butter(F_Ord,(Fc+[-F_Band,F_Band])./(EEG.Fs/2));
 
-fclose(biosemi_tcp_obj);
+fclose(EEG.tcp_obj);
 
 try
-    fopen(biosemi_tcp_obj)
+    fopen(EEG.tcp_obj)
 catch
     disp('Unable to open TCP connection with BioSemi, check ActiView is running')
 end
 
-clear data
+clear datawrite
 
 %Create axes handles and setup plotting
-%h = create_axes(EEG_Settings);
-
+h = create_axes(EEG);
+%%
 while(1)
 
-    [data triggers]  = get_x_seconds_of_data(biosemi_tcp_obj,EEG_Settings,EEG_Settings.Seconds_Of_Data);
+    [data triggers]  = get_x_seconds_of_data(EEG);
 
-imagesc(triggers)
-%data = filtfilt(b,a,data');
-%data = abs(hilbert(data));
+data = filtfilt(b,a,data);
+data = abs(hilbert(data));
 % data = data';
-% plot_data(data,EEG_Settings,h);
+ plot_data(data,EEG,h);
 drawnow;
 end

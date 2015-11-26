@@ -6,22 +6,22 @@
 %Tom Dowrick
 
 
-function [data triggers] = get_x_seconds_of_data(tcp_obj,EEG_Settings,seconds_to_get)
+function [data triggers] = get_x_seconds_of_data(EEG)
 
 %Dimensions of a single packet of data, N_Channels x N_Samples
-dims = ([EEG_Settings.N_CHANNELS EEG_Settings.SAMPLES_PER_PACKET * seconds_to_get]);
+dims = ([EEG.N_elecs EEG.Samples_per_packet * EEG.Seconds_of_data]);
 
 %pre allocate matrix for speed
 data= zeros(dims);
 
-while(EEG_Settings.SAMPLES_READ < EEG_Settings.Fs*seconds_to_get)
+while(EEG.Samples_read < EEG.Fs*EEG.Seconds_of_data)
     
-    x_range = (EEG_Settings.SAMPLES_READ+1) : EEG_Settings.SAMPLES_READ + EEG_Settings.SAMPLES_PER_PACKET;
+    x_range = (EEG.Samples_read+1) : EEG.Samples_read + EEG.Samples_per_packet;
     
     %Get block of data from Biosemi
     [data(:, x_range) triggers(:,x_range)] = ...
-        get_tcp_packet_from_BioSemi(    tcp_obj, EEG_Settings);
+        get_tcp_packet_from_BioSemi(EEG);
     
-    EEG_Settings.SAMPLES_READ = EEG_Settings.SAMPLES_READ + EEG_Settings.SAMPLES_PER_PACKET;
+    EEG.Samples_read = EEG.Samples_read + EEG.Samples_per_packet;
     
 end

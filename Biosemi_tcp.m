@@ -1,22 +1,17 @@
-%Code for loading BioSemi data directly into MATLAB over TCP
-clear all
+%Set up variables and TCP object for loading data from BioSemi over TCP
 %Tom Dowrick November 2015.
-%% Set variables
+%% Set variables Default values used, can change if necessary
 %BioSemi IP Address, Port and TCP Buffer Size
 EEG.IP      = '127.0.0.1';
 EEG.Port    = 8888;
-EEG.TCP_buffer  = 27648;
+EEG.TCP_buffer  = 101376; %IMPORTANT: Need to check the TCP tab in Actiview to get corect value for this!
 EEG.Type = 'BioSemi';
-
-%Connect to Biosemi over TCP
-EEG.tcp_obj = create_tcp_obj(EEG.IP,EEG.Port,EEG.TCP_buffer);
-
 
 %Sampling Frequency
 EEG.Fs = 16384;
 
 %Number of data channels and samples per TCP packet
-EEG.N_elecs = 8;
+EEG.N_elecs = 32;
 EEG.Triggers = 1; %0 if triggers not recorded
 EEG.N_recorded_channels = EEG.N_elecs + EEG.Triggers;
 EEG.Bytes_per_sample = 3;
@@ -29,32 +24,6 @@ EEG.N_trig_chans = 16; %Number of trigger channels (Biosemi has 16)
 %How many seconds of data to read
 EEG.Seconds_of_data = 1;
 
-%Detect injection frequency and calculate filter coefficents
-Fc = get_inj_freq;
-F_Band = 100;
-F_Ord = 1;
-[b,a] = butter(F_Ord,(Fc+[-F_Band,F_Band])./(EEG.Fs/2));
+%Connect to Biosemi over TCP
+EEG.tcp_obj = create_tcp_obj(EEG.IP,EEG.Port,EEG.TCP_buffer);
 
-fclose(EEG.tcp_obj);
-
-try
-    fopen(EEG.tcp_obj)
-catch
-    disp('Unable to open TCP connection with BioSemi, check ActiView is running')
-end
-
-clear datawrite
-
-%Create axes handles and setup plotting
-h = create_axes(EEG);
-%%
-while(1)
-
-    [data triggers]  = get_x_seconds_of_data(EEG);
-
-data = filtfilt(b,a,data);
-data = abs(hilbert(data));
-% data = data';
- plot_data(data,EEG,h);
-drawnow;
-end

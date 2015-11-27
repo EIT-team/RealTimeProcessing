@@ -1,5 +1,6 @@
 %Reads x seconds of data from tcp_obj, where x is EEG_Settings.Seconds_Of_Data
-%Currently smallest time period that will work is 50ms (16.11.2015)
+%Currently smallest time period that will work is 50ms (16.11.2015), which
+%is dependent on the tcp buffer size/ActiView settings.
 %If the trigger channel has been recorded, return this as well
 
 

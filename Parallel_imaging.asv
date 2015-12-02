@@ -18,7 +18,7 @@ end
 % still need to implement this properly
 
 Mesh = load('D:\Documents\Experimental Data\SA060.mat');
-
+elec_pos = load('D:\Documents\Experimental Data\SA060-elecs.mat');
 %Convert to 'simple' mesh that can be used in MATLAB scatter plots
 
 [mesh_simple, centre_inds] = cylindrical_tank_mesh_simplify(Mesh, 0.5);
@@ -77,7 +77,6 @@ EEG.Seconds_of_data = (250*EEG.Fs/min(Freqs))/EEG.Fs;
     fopen(EEG.tcp_obj)  %Think it happens if there is too long a delay between read calls.
 while(1)
     tic
-    flu
         
     Data  = get_x_seconds_of_data(EEG)';
     %disp ( ['Load Data ' num2str(toc)]); tic

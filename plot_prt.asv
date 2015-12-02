@@ -1,0 +1,20 @@
+%% Plot injections on the mesh/electrode map
+function h = plot_prt (elec_pos,Freqs,Prt)
+
+n_elecs = size(elec_pos,1);
+n_freqs = size(Freqs);
+
+%% plot electrode locations
+h =scatter(elec_pos(:,1),elec_pos(:,2))
+
+hold on
+for i = 1:n_freqs
+    
+    e1 = elec_pos( Prt(i,1),: ); %electrodes used for injection
+    e2 = elec_pos( Prt(i,2),: );
+    
+       
+    scribe.doublearrow(  'X',    [e1(1) e2(1)-e1(1)],...
+                        'Y',    [e1(2) e2(2)-e1(2)]...
+                        );
+end 

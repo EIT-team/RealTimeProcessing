@@ -18,7 +18,7 @@ end
 % still need to implement this properly
 
 Mesh = load('D:\Documents\Experimental Data\SA060.mat');
-
+load('D:\Documents\Experimental Data\SA060-elecs.mat');
 %Convert to 'simple' mesh that can be used in MATLAB scatter plots
 
 [mesh_simple, centre_inds] = cylindrical_tank_mesh_simplify(Mesh, 0.5);
@@ -41,6 +41,7 @@ Data  = get_x_seconds_of_data(EEG)';
 Freqs = [994 ;1985; 2989];
 Prt = [5 21; 1 17; 9 25];
 
+h_prt = plot_prt(elec_pos,Freqs,Prt);
 % Generate full protocol
 prtfull = gen_prt(Prt,EEG.N_elecs);
 

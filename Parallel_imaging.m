@@ -1,4 +1,5 @@
 clear all
+close all
 warning('off','MATLAB:colon:nonIntegerIndex')
 warning('off','MATLAB:NonIntegerInput')
 Biosemi_tcp %Creates structure with paremeters and TCP object to stream data from BioSemi
@@ -14,21 +15,38 @@ catch
 end
 
 
-%% Load mesh and construct the Jacobian
+%% Load mesh and
 % still need to implement this properly
 
 Mesh = load('D:\Documents\Experimental Data\SA060.mat');
 load('D:\Documents\Experimental Data\SA060-elecs.mat');
 %Convert to 'simple' mesh that can be used in MATLAB scatter plots
 
-[mesh_simple, centre_inds] = cylindrical_tank_mesh_simplify(Mesh, 0.5);
 
-load('D:\Documents\Experimental Data\Parallel Current Source\Evaluation Data\Tank 32 Channel\Jacobian.mat');
-load('D:\Documents\Experimental Data\Parallel Current Source\Evaluation Data\Tank 32 Channel\prtfull.mat');
+[mesh_simple, centre_inds] = cylindrical_tank_mesh_simplify(Mesh, 0.05);
 
 %Use only the mesh elements that are close to 0 on the z axis to reduce
 %number of elements and improve computation time later.
 mesh_simple = mesh_simple(:,centre_inds);
+
+%Create grid data for plotting surface
+step_size = 0.25;
+[Xg, Yg] = meshgrid(  min(mesh_simple(1,:)):step_size:max(mesh_simple(1,:)),...
+                    min(mesh_simple(2,:)):step_size:max(mesh_simple(2,:))...
+                    );
+                
+Vq = griddata(  mesh_simple(1,:), mesh_simple(2,:), mesh_simple(3,:),...
+                Xg,Yg); 
+            
+%Create inital plot of the tank
+h = surf(Xg,Yg,Vq);
+view(2)
+plot_text = text(   0.8,0.9,'Time','Units','normalized',...
+                    'FontSize',16,'FontName','Times New Roman')
+
+%% construct the Jacobian
+load('D:\Documents\Experimental Data\Parallel Current Source\Evaluation Data\Tank 32 Channel\Jacobian.mat');
+load('D:\Documents\Experimental Data\Parallel Current Source\Evaluation Data\Tank 32 Channel\prtfull.mat');
 
 %remove unused from jac/prt/bv0
 prt_keep = [1:30 61:120];
@@ -41,7 +59,9 @@ Data  = get_x_seconds_of_data(EEG)';
 Freqs = [994 ;1985; 2989];
 Prt = [5 21; 1 17; 9 25];
 
+figure
 h_prt = plot_prt(elec_pos,Freqs,Prt);
+
 % Generate full protocol
 prtfull = gen_prt(Prt,EEG.N_elecs);
 
@@ -60,15 +80,6 @@ Baseline = get_BV(Data,EEG,Filt,Freqs,Prt);
 
 %% Get data from BioSemi and reconstruct
 
-%h=scatter(mesh_simple(1,:),mesh_simple(2,:),1); %handle to scatter plot
-props = {'LineStyle','none','Marker','o','MarkerEdge','b','MarkerSize',6}; % axes properties
-cla;
-
-h=line([mesh_simple(1,:),mesh_simple(1,:)],[mesh_simple(2,:),mesh_simple(2,:)],props{:});
-h1 = get(h);
-
-set(h1.Parent,'XLim',[-10 10],'YLim',[-10 10],'XTickLabel','','YTickLabel','');
-set(h1.Parent,'NextPlot','replacechildren');
 
 drawnow
 % How much data to collect for each image
@@ -78,7 +89,7 @@ EEG.Seconds_of_data = (250*EEG.Fs/min(Freqs))/EEG.Fs;
     fopen(EEG.tcp_obj)  %Think it happens if there is too long a delay between read calls.
 while(1)
     tic
-        
+    %disp(['TCP Bytes: ' num2str(EEG.tcp_obj.BytesAvailable)])
     Data  = get_x_seconds_of_data(EEG)';
     %disp ( ['Load Data ' num2str(toc)]); tic
 
@@ -89,13 +100,14 @@ while(1)
     
         %disp ( ['Recon ' num2str(toc)]); tic
 
- 
-  A = abs(X)>0.25e-2;
-set(h,'XData',mesh_simple(1,A),'YData',mesh_simple(2,A));
+ Vq = griddata(  mesh_simple(1,:), mesh_simple(2,:), X,...
+                Xg,Yg); 
+            
+ set(h,'CData',Vq)
 drawnow
 
-toc
-        %disp ( ['Draw ' num2str(toc)]);
+ set(plot_text,'String',toc)
+       
 
     
 end

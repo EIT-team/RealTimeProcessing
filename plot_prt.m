@@ -1,4 +1,8 @@
 %% Plot injections on the mesh/electrode map
+% Inputs:   elec_pos    - Electrode positions
+%           Freqs       - List of frequencies
+%           Prt         - List of prtocol steps/injection pairs
+            
 function h = plot_prt (elec_pos,Freqs,Prt)
 
 n_elecs = size(elec_pos,1);
@@ -11,9 +15,12 @@ h =scatter(elec_pos(:,1),elec_pos(:,2));
 % for i = 1:n_elecs
 %     text(elec_pos(i,1),elec_pos(i,2),num2str(i))
 % end
+
+% min/max axis values
 x_range = max(xlim);
 y_range = max(ylim);
 
+%%
 hold on
 for i = 1:n_freqs
     
@@ -29,8 +36,10 @@ for i = 1:n_freqs
                         );
                     
    %Annotate injection frequency
-      
-    text(   e1(1)+0.025*x_range,e1(2)+0.025*y_range,[num2str(Freqs(i)) 'Hz'],...
+   %To do: think of nicer way to offset the text from the electrodes
+   text(    e1(1)+0.025*x_range,e1(2)+0.025*y_range,...
+            [num2str(Freqs(i)) 'Hz'],...
             'FontName','Times New Roman','FontSize', 12) 
 end 
+
 end

@@ -14,6 +14,8 @@ MAGNITUDE_SCALE_FACTOR = 256*32;
 data = zeros(EEG.N_elecs,EEG.Samples_per_packet);
 
 %Read TCP data
+while(get(EEG.tcp_obj,'BytesAvailable')==0)
+end
 
 stream = fread(EEG.tcp_obj);
 
